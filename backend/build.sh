@@ -5,7 +5,15 @@ set -o errexit
 pip install -r requirements.txt
 
 python manage.py collectstatic --no-input
+
+# Sync initial migrations
 python manage.py migrate --fake-initial
 
-# Load initial data into database (products, categories, users)
-python manage.py loaddata data.json 
+# Fake the problematic contenttypes migration
+python manage.py migrate contenttypes 0002 --fake
+
+# Now apply remaining migrations safely
+python manage.py migrate
+
+# Load initial data (ONLY if tables are ready)
+python manage.py loaddata data.json
