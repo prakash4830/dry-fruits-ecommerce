@@ -33,7 +33,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-dev-key-change-in-production')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config('DEBUG', default=True, cast=bool)
+DEBUG = config('DEBUG', default=False, cast=bool)
 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
 
@@ -187,14 +187,23 @@ WSGI_APPLICATION = "config.wsgi.application"
 # Worker: Dev - SQLite for dev, PostgreSQL for production
 # =============================================================================
 
-# Check for DATABASE_URL for PostgreSQL
-DATABASE_URL = config('DATABASE_URL', default=None)
+# Check for individual PostgreSQL environment variables (Render deployment)
+DB_NAME = config('DB_NAME', default=None)
+DB_USER = config('DB_USER', default=None)
+DB_PASSWORD = config('DB_PASSWORD', default=None)
+DB_HOST = config('DB_HOST', default=None)
 
-if DATABASE_URL:
-    # Production: PostgreSQL
-    import dj_database_url
+if DB_NAME and DB_USER and DB_HOST:
+    # Production: PostgreSQL with individual credentials
     DATABASES = {
-        "default": dj_database_url.parse(DATABASE_URL)
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": DB_NAME,
+            "USER": DB_USER,
+            "PASSWORD": DB_PASSWORD,
+            "HOST": DB_HOST,
+            "PORT": config('DB_PORT', default="5432"),
+        }
     }
 else:
     # Development: SQLite
