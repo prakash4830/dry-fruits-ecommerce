@@ -286,8 +286,7 @@ WHITENOISE_MIMETYPES = {
 if not DEBUG:
     # Configure WhiteNoise to serve media files
     WHITENOISE_ROOT = MEDIA_ROOT
-    # Add CORS headers for media files
-    WHITENOISE_ADD_HEADERS_FUNCTION = 'config.utils.add_cors_headers'
+    # CORS headers for media files are handled in urls.py view
 
 # =============================================================================
 # DEFAULT PRIMARY KEY FIELD TYPE
