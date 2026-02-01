@@ -6,3 +6,6 @@ pip install -r requirements.txt
 
 python manage.py collectstatic --no-input
 python manage.py migrate
+
+# Load initial data into database (products, categories, users)
+python manage.py loaddata data.json
