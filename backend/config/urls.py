@@ -8,12 +8,20 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.http import JsonResponse
 
 # Import admin URL patterns from apps
 from products.urls import admin_urlpatterns as product_admin_urls
 from orders.urls import admin_urlpatterns as order_admin_urls
 
+def health(request):
+    return JsonResponse({"status": "ok"})
+
+
 urlpatterns = [
+    # Health check
+    path('api/health/', health),
+
     # Django Admin
     path('admin/', admin.site.urls),
     
