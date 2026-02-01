@@ -19,8 +19,13 @@ class ProductImageSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         ret = super().to_representation(instance)
         if instance.image:
-            # Return relative URL for remote compatibility
-            ret['image'] = instance.image.url
+            request = self.context.get('request')
+            if request:
+                # Build absolute URL
+                ret['image'] = request.build_absolute_uri(instance.image.url)
+            else:
+                # Fallback to relative URL
+                ret['image'] = instance.image.url
         return ret
 
 
@@ -43,8 +48,13 @@ class CategorySerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         ret = super().to_representation(instance)
         if instance.image:
-            # Return relative URL for remote compatibility
-            ret['image'] = instance.image.url
+            request = self.context.get('request')
+            if request:
+                # Build absolute URL
+                ret['image'] = request.build_absolute_uri(instance.image.url)
+            else:
+                # Fallback to relative URL
+                ret['image'] = instance.image.url
         return ret
 
 
@@ -68,8 +78,13 @@ class ProductListSerializer(serializers.ModelSerializer):
     def get_primary_image(self, obj):
         primary = obj.images.filter(is_primary=True).first()
         if primary:
-            # Return relative URL so it works with any host (ngrok, localhost, etc.)
-            return primary.image.url
+            request = self.context.get('request')
+            if request:
+                # Build absolute URL for cross-origin access
+                return request.build_absolute_uri(primary.image.url)
+            else:
+                # Fallback to relative URL
+                return primary.image.url
         return None
 
 

@@ -37,7 +37,15 @@ urlpatterns = [
     path('api/admin/orders/', include(order_admin_urls)),
 ]
 
-# Serve media files in development
+# Serve media files
+# In development: Django serves directly
+# In production: WhiteNoise serves with CORS headers
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+else:
+    # In production, add media URL pattern for WhiteNoise
+    from django.views.static import serve
+    urlpatterns += [
+        path('media/<path:path>', serve, {'document_root': settings.MEDIA_ROOT}),
+    ]

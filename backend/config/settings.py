@@ -141,6 +141,8 @@ MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",  # Must be before CommonMiddleware
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
+    "config.middleware.CsrfExemptAPIMiddleware",  # Exempt JWT API requests from CSRF
+    "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -200,16 +202,35 @@ WSGI_APPLICATION = "config.wsgi.application"
 import dj_database_url
 
 DATABASE_URL = config("DATABASE_URL", default=None)
-    # Production: PostgreSQL via DATABASE_URL
-DATABASES = {
-    "default": dj_database_url.parse(
-        DATABASE_URL,
-        conn_max_age=600,
-        ssl_require=True,
-    )
-}
 
-DATABASES["default"]["DISABLE_SERVER_SIDE_CURSORS"] = True
+if DATABASE_URL:
+    # Production: PostgreSQL via DATABASE_URL (Supabase with PgBouncer)
+    DATABASES = {
+        "default": dj_database_url.parse(
+            DATABASE_URL,
+            conn_max_age=600,  # Connection pooling
+            ssl_require=True,
+        )
+    }
+    
+    # Disable server-side cursors for PgBouncer compatibility
+    # PgBouncer in transaction mode doesn't support server-side cursors
+    DATABASES["default"]["DISABLE_SERVER_SIDE_CURSORS"] = True
+    
+    # Additional PgBouncer optimizations
+    DATABASES["default"]["OPTIONS"] = {
+        "connect_timeout": 10,
+        "options": "-c statement_timeout=30000",  # 30 seconds
+    }
+else:
+    # Development fallback: SQLite
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
+
 
 
 # =============================================================================
@@ -253,6 +274,21 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
+# WhiteNoise configuration for production static files
+WHITENOISE_USE_FINDERS = True
+WHITENOISE_AUTOREFRESH = DEBUG  # Auto-refresh in development
+WHITENOISE_MIMETYPES = {
+    '.webp': 'image/webp',
+}
+
+# Serve media files via WhiteNoise in production
+# Note: For large-scale production, consider using cloud storage (S3, Cloudinary)
+if not DEBUG:
+    # Configure WhiteNoise to serve media files
+    WHITENOISE_ROOT = MEDIA_ROOT
+    # Add CORS headers for media files
+    WHITENOISE_ADD_HEADERS_FUNCTION = 'config.utils.add_cors_headers'
+
 # =============================================================================
 # DEFAULT PRIMARY KEY FIELD TYPE
 # =============================================================================
@@ -289,9 +325,13 @@ if not DEBUG:
     SECURE_SSL_REDIRECT = True
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     
-    # Cookie Security
+    # Cookie Security - Cross-Origin Configuration
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SAMESITE = 'None'  # Required for cross-origin (Vercel <-> Render)
+    CSRF_COOKIE_SAMESITE = 'None'     # Required for cross-origin requests
+    SESSION_COOKIE_HTTPONLY = True    # Prevent XSS attacks
+    CSRF_COOKIE_HTTPONLY = False      # Must be False so JS can read it
     
     # Security Headers
     SECURE_CONTENT_TYPE_NOSNIFF = True
@@ -302,6 +342,10 @@ if not DEBUG:
     SECURE_HSTS_SECONDS = 31536000  # 1 year
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
+else:
+    # Development - Relaxed cookie settings for localhost
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    CSRF_COOKIE_SAMESITE = 'Lax'
 
 # =============================================================================
 # LOGGING
