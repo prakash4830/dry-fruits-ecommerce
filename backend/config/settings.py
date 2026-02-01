@@ -187,23 +187,18 @@ WSGI_APPLICATION = "config.wsgi.application"
 # Worker: Dev - SQLite for dev, PostgreSQL for production
 # =============================================================================
 
-# Check for individual PostgreSQL environment variables (Render deployment)
-DB_NAME = config('DB_NAME', default=None)
-DB_USER = config('DB_USER', default=None)
-DB_PASSWORD = config('DB_PASSWORD', default=None)
-DB_HOST = config('DB_HOST', default=None)
+import dj_database_url
 
-if DB_NAME and DB_USER and DB_HOST:
-    # Production: PostgreSQL with individual credentials
+DATABASE_URL = config("DATABASE_URL", default=None)
+
+if DATABASE_URL:
+    # Production: PostgreSQL via DATABASE_URL
     DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": DB_NAME,
-            "USER": DB_USER,
-            "PASSWORD": DB_PASSWORD,
-            "HOST": DB_HOST,
-            "PORT": config('DB_PORT', default="5432"),
-        }
+        "default": dj_database_url.parse(
+            DATABASE_URL,
+            conn_max_age=600,
+            ssl_require=True,
+        )
     }
 else:
     # Development: SQLite
