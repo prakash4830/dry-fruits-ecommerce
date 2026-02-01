@@ -208,6 +208,9 @@ else:
             "NAME": BASE_DIR / "db.sqlite3",
         }
     }
+    
+DATABASES["default"]["DISABLE_SERVER_SIDE_CURSORS"] = True
+
 
 # =============================================================================
 # PASSWORD VALIDATION
