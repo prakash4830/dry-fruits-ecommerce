@@ -132,8 +132,9 @@ ACCOUNT_EMAIL_VERIFICATION = "optional"
 # =============================================================================
 
 MIDDLEWARE = [
-    "corsheaders.middleware.CorsMiddleware",  # CORS - must be first
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",  # Serve static files in production
+    "corsheaders.middleware.CorsMiddleware",  # Must be before CommonMiddleware
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
